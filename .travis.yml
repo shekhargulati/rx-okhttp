@@ -1,3 +1,4 @@
 language: java
+script: ./gradlew clean build -x :signArchives
 jdk:
   - oraclejdk8
