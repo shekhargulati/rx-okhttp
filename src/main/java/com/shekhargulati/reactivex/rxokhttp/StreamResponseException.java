@@ -24,50 +24,17 @@
 
 package com.shekhargulati.reactivex.rxokhttp;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+public class StreamResponseException extends RuntimeException {
 
-import java.lang.reflect.Type;
+    private final String json;
 
-public class DockerStreamResponseException extends RuntimeException {
-
-    private final String error;
-    private final String message;
-
-    public DockerStreamResponseException(String json) {
-        Type type = new TypeToken<DockerErrorDetails>() {
-        }.getType();
-        DockerErrorDetails details = new Gson().fromJson(json, type);
-        this.error = details.getError();
-        this.message = details.getErrorDetail().getMessage();
+    public StreamResponseException(String json) {
+        this.json = json;
     }
 
-    public String getError() {
-        return error;
-    }
-
-    public String getMessage() {
-        return message;
+    public String getJson() {
+        return json;
     }
 }
 
-class DockerErrorDetails {
-    private ErrorDetails errorDetail;
-    private String error;
 
-    public ErrorDetails getErrorDetail() {
-        return errorDetail;
-    }
-
-    public String getError() {
-        return error;
-    }
-}
-
-class ErrorDetails {
-    private String message;
-
-    public String getMessage() {
-        return message;
-    }
-}

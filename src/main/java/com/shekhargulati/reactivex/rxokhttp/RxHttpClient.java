@@ -55,44 +55,82 @@ public interface RxHttpClient {
 
     /**
      * This method makes an HTTP GET request and return response body as String of Observable
+     * The returned Observable will only have a single element.
      *
      * @param endpoint Endpoint at which to make the GET call
-     * @return Observable sequence of String
+     * @return Observable with single String value
      */
     Observable<String> get(String endpoint);
 
     /**
-     * This method makes an HTTP GET request and then convert the resultant JSON into R using the JsonBodyTransformer function
+     * This method makes an HTTP GET request and return response body as String of Observable.
+     * The returned Observable will only have a single element.
+     *
+     * @param endpoint Endpoint at which to make the GET call
+     * @param headers  Http headers that you want to pass along
+     * @return Observable with single String value
+     */
+    Observable<String> get(String endpoint, Map<String, String> headers);
+
+    /**
+     * This method makes an HTTP GET request and then convert the resultant JSON into R using the StringResponseTransformer function
      *
      * @param endpoint    Endpoint at which to make the GET call
      * @param transformer function to convert String response into some other domain object
      * @param <R>         type returned by StringResponseTransformer
-     * @return Observable sequence of R
+     * @return Observable with single R value
      */
     <R> Observable<R> get(final String endpoint, StringResponseTransformer<R> transformer);
 
     /**
-     * This method makes an HTTP GET request and then convert the resultant JSON into R using the JsonBodyTransformer function
+     * This method makes an HTTP GET request and then convert the resultant JSON into R using the StringResponseTransformer function
      *
      * @param endpoint    Endpoint at which to make the GET call
      * @param headers     HTTP headers to be sent along with the request
      * @param transformer function to convert String response into some other domain object
      * @param <R>         type returned by StringResponseTransformer
-     * @return Observable sequence of R
+     * @return Observable with single R value
      */
     <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseTransformer<R> transformer);
 
+    /**
+     * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
+     *
+     * @param endpoint    Endpoint at which to make the GET call
+     * @param transformer function to convert String response into a Collection<R>
+     * @param <R>         type to convert to
+     * @return Observable with multiple R values
+     */
     <R> Observable<R> get(String endpoint, StringResponseToCollectionTransformer<R> transformer);
 
+    /**
+     * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
+     *
+     * @param endpoint    Endpoint at which to make the GET call
+     * @param transformer function to convert String response into a Collection<R>
+     * @param headers     HTTP headers to be sent along with the request
+     * @param <R>         type to convert to
+     * @return Observable with multiple R values
+     */
     <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseToCollectionTransformer<R> transformer);
 
-    <T> Observable<T> getResponseStream(String endpoint, Map<String, String> headers, StringResponseTransformer<T> transformer);
+    /**
+     * This method makes an HTTP GET request and allows users to tranform the OkHttp Response directly.
+     *
+     * @param endpoint    Endpoint at which to make the GET call
+     * @param transformer a function to convert Response to R
+     * @param <R>         type to convert to
+     * @return Observable with single R value
+     */
+    <R> Observable<R> get(String endpoint, ResponseTransformer<R> transformer);
+
+    Observable<String> getResponseStream(String endpoint);
 
     Observable<String> getResponseStream(String endpoint, Map<String, String> headers);
 
-    Observable<Buffer> getResponseBufferStream(String endpoint);
+    <T> Observable<T> getResponseStream(String endpoint, Map<String, String> headers, StringResponseTransformer<T> transformer);
 
-    Observable<String> getResponseStream(String endpoint);
+    Observable<Buffer> getResponseBufferStream(String endpoint);
 
     <T> Observable<T> getResponseStream(String endpoint, StringResponseTransformer<T> transformer);
 
@@ -100,23 +138,34 @@ public interface RxHttpClient {
 
     Observable<HttpStatus> post(String endpoint);
 
-    <R> Observable<R> get(String endpoint, ResponseTransformer<R> transformer);
-
-    <R> Observable<R> post(String endpoint, String postBody, ResponseTransformer<R> transformer);
+    Observable<HttpStatus> post(String endpoint, Map<String, String> headers);
 
     Observable<HttpStatus> post(String endpoint, String body);
+
+    Observable<HttpStatus> post(String endpoint, Map<String, String> headers, String body);
 
     <R> Observable<R> post(String endpoint, ResponseBodyTransformer<R> bodyTransformer);
 
     <R> Observable<R> post(String endpoint, String postBody, ResponseBodyTransformer<R> bodyTransformer);
 
+    <R> Observable<R> post(String endpoint, Map<String, String> headers, ResponseBodyTransformer<R> bodyTransformer);
+
+    <R> Observable<R> post(String endpoint, String postBody, ResponseTransformer<R> transformer);
+
+    <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer);
+
     Observable<String> postAndReceiveResponse(String endpoint);
 
-    Observable<String> postAndReceiveResponse(String endpoint, AuthConfig authConfig, Predicate<String> errorChecker);
+    Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers);
 
-    Observable<String> postAndReceiveResponse(String endpoint, String postBody, Optional<AuthConfig> authConfig, Predicate<String> errorChecker);
+    Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers, Predicate<String> errorChecker);
+
+    Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers, String postBody, Predicate<String> errorChecker);
+
+    <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, BufferTransformer<R> transformer);
 
     Observable<HttpStatus> delete(final String endpoint);
 
-    public <R> Observable<R> postTarStream(final String endpoint, final Path pathToTarArchive, final BufferTransformer<R> transformer);
+    Observable<HttpStatus> delete(final String endpoint, Map<String, String> headers);
+
 }

@@ -27,6 +27,12 @@ package com.shekhargulati.reactivex.rxokhttp.functions;
 import java.util.Collection;
 import java.util.function.Function;
 
+/**
+ * A function to convert a String response into a Collection<T>
+ *
+ * @param <T> return value type
+ */
+@FunctionalInterface
 public interface StringResponseToCollectionTransformer<T> extends Function<String, Collection<T>> {
 
 }

@@ -77,7 +77,13 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<String> get(final String endpoint) {
+        Optional.ofNullable(endpoint).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
         return get(endpoint, StringResponseTransformer.identityOp());
+    }
+
+    @Override
+    public Observable<String> get(final String endpoint, final Map<String, String> headers) {
+        return get(endpoint, headers, StringResponseTransformer.identityOp());
     }
 
     @Override
@@ -101,7 +107,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         return Observable.create(subscriber -> {
             if (!subscriber.isUnsubscribed()) {
                 try {
-                    Response response = makeHttpGetRequest(fullEndpointUrl);
+                    Response response = makeHttpGetRequest(fullEndpointUrl, headers);
                     if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
                         try (ResponseBody body = response.body()) {
                             Collection<R> collection = transformer.apply(body.string());
@@ -131,7 +137,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         final String fullEndpointUrl = fullEndpointUrl(endpoint);
         return Observable.create(subscriber -> {
             try {
-                Response response = makeHttpGetRequest(fullEndpointUrl);
+                Response response = makeHttpGetRequest(fullEndpointUrl, headers);
                 if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
                     try (ResponseBody body = response.body()) {
                         BufferedSource source = body.source();
@@ -214,7 +220,12 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<HttpStatus> post(final String endpoint) {
-        return post(endpoint, EMPTY_BODY, ResponseTransformer.httpStatus());
+        return post(endpoint, EMPTY_BODY);
+    }
+
+    @Override
+    public Observable<HttpStatus> post(String endpoint, Map<String, String> headers) {
+        return post(endpoint, headers, EMPTY_BODY);
     }
 
     @Override
@@ -223,8 +234,18 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
+    public Observable<HttpStatus> post(final String endpoint, final Map<String, String> headers, final String body) {
+        return post(endpoint, headers, body, ResponseTransformer.httpStatus());
+    }
+
+    @Override
     public <R> Observable<R> post(final String endpoint, final ResponseBodyTransformer<R> bodyTransformer) {
         return post(endpoint, EMPTY_BODY, ResponseTransformer.fromBody(bodyTransformer));
+    }
+
+    @Override
+    public <R> Observable<R> post(String endpoint, Map<String, String> headers, ResponseBodyTransformer<R> bodyTransformer) {
+        return post(endpoint, EMPTY_BODY, bodyTransformer);
     }
 
     @Override
@@ -234,10 +255,15 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <R> Observable<R> post(final String endpoint, final String postBody, final ResponseTransformer<R> transformer) {
+        return post(endpoint, Collections.emptyMap(), postBody, transformer);
+    }
+
+    @Override
+    public <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer) {
         final String fullEndpointUrl = fullEndpointUrl(endpoint);
         return Observable.create(subscriber -> {
             try {
-                Response response = makeHttpPostRequest(fullEndpointUrl, postBody);
+                Response response = makeHttpPostRequest(fullEndpointUrl, headers, postBody);
                 if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
                     subscriber.onNext(transformer.apply(response));
                     subscriber.onCompleted();
@@ -253,16 +279,21 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<String> postAndReceiveResponse(final String endpoint) {
-        return postAndReceiveResponse(endpoint, EMPTY_BODY, Optional.<AuthConfig>empty(), t -> false);
+        return postAndReceiveResponse(endpoint, Collections.emptyMap(), EMPTY_BODY, t -> false);
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(final String endpoint, AuthConfig authConfig, Predicate<String> errorChecker) {
-        return postAndReceiveResponse(endpoint, EMPTY_BODY, Optional.ofNullable(authConfig), errorChecker);
+    public Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers) {
+        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, t -> false);
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(final String endpoint, final String postBody, Optional<AuthConfig> authConfig, Predicate<String> errorChecker) {
+    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, Predicate<String> errorChecker) {
+        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, errorChecker);
+    }
+
+    @Override
+    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, final String postBody, Predicate<String> errorChecker) {
         final String fullEndpointUrl = fullEndpointUrl(endpoint);
         return Observable.create(subscriber -> {
             try {
@@ -279,12 +310,9 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
                 };
                 Request.Builder requestBuilder = new Request.Builder()
                         .header("Content-Type", "application/json");
-                if (authConfig.isPresent()) {
-                    requestBuilder
-                            .header("X-Registry-Auth", authConfig.get().xAuthHeader());
-                }
                 Request postRequest = requestBuilder
                         .url(fullEndpointUrl)
+                        .headers(Headers.of(headers))
                         .post(requestBody)
                         .build();
                 logger.info("Making POST request to {}", fullEndpointUrl);
@@ -299,7 +327,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
                             if (!errorChecker.test(responseLine)) {
                                 subscriber.onNext(responseLine);
                             } else {
-                                subscriber.onError(new DockerStreamResponseException(responseLine));
+                                subscriber.onError(new StreamResponseException(responseLine));
                             }
                         }
                         subscriber.onCompleted();
@@ -341,7 +369,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         return Observable.create(subscriber ->
                 {
                     try {
-                        Response response = makeHttpPostRequest(fullEndpointUrl, requestBody);
+                        Response response = makeHttpPostRequest(fullEndpointUrl, Collections.emptyMap(), requestBody);
                         if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
                             try (ResponseBody body = response.body()) {
                                 BufferedSource source = body.source();
@@ -365,10 +393,15 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<HttpStatus> delete(final String endpoint) {
+        return delete(endpoint, Collections.emptyMap());
+    }
+
+    @Override
+    public Observable<HttpStatus> delete(String endpoint, Map<String, String> headers) {
         final String fullEndpointUrl = fullEndpointUrl(endpoint);
         return Observable.create(subscriber -> {
             try {
-                Response response = makeHttpDeleteRequest(fullEndpointUrl);
+                Response response = makeHttpDeleteRequest(fullEndpointUrl, headers);
                 if (response.isSuccessful()) {
                     subscriber.onNext(HttpStatus.of(response.code(), response.message()));
                     subscriber.onCompleted();
@@ -382,9 +415,10 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         });
     }
 
-    private Response makeHttpDeleteRequest(String fullEndpointUrl) throws IOException {
+    private Response makeHttpDeleteRequest(String fullEndpointUrl, Map<String, String> headers) throws IOException {
         Request deleteRequest = new Request.Builder()
                 .header("Content-Type", "application/json")
+                .headers(Headers.of(headers))
                 .url(fullEndpointUrl)
                 .delete()
                 .build();
@@ -395,8 +429,13 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
 
     private Response makeHttpGetRequest(final String fullEndpointUrl) throws IOException {
+        return makeHttpGetRequest(fullEndpointUrl, Collections.emptyMap());
+    }
+
+    private Response makeHttpGetRequest(final String fullEndpointUrl, final Map<String, String> headers) throws IOException {
         Request getRequest = new Request.Builder()
                 .url(fullEndpointUrl)
+                .headers(Headers.of(headers))
                 .build();
         logger.info("Making GET request to {}", fullEndpointUrl);
         Call call = client.newCall(getRequest);
@@ -413,14 +452,15 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
                 .orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty"));
     }
 
-    private Response makeHttpPostRequest(String fullEndpointUrl, String body) throws IOException {
+    private Response makeHttpPostRequest(String fullEndpointUrl, Map<String, String> headers, String body) throws IOException {
         RequestBody requestBody = RequestBody.create(JSON, body);
-        return makeHttpPostRequest(fullEndpointUrl, requestBody);
+        return makeHttpPostRequest(fullEndpointUrl, headers, requestBody);
     }
 
-    private Response makeHttpPostRequest(final String fullEndpointUrl, final RequestBody requestBody) throws IOException {
+    private Response makeHttpPostRequest(final String fullEndpointUrl, Map<String, String> headers, final RequestBody requestBody) throws IOException {
         Request getRequest = new Request.Builder()
                 .header("Content-Type", "application/json")
+                .headers(Headers.of(headers))
                 .url(fullEndpointUrl)
                 .post(requestBody)
                 .build();
