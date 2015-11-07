@@ -28,8 +28,6 @@ dependencies {
     testCompile 'org.hamcrest:hamcrest-all:1.3'
 }
 
-ossrhUser = System.getenv('OSS_USER')
-ossrhPassword = System.getenv('OSS_PASSWORD')
 
 uploadArchives {
     repositories {
@@ -37,11 +35,11 @@ uploadArchives {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUser, password: ossrhPassword)
+                authentication(userName: System.getenv('OSS_USER'), password: System.getenv('OSS_PASSWORD'))
             }
 
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUser, password: ossrhPassword)
+                authentication(userName: System.getenv('OSS_USER'), password: System.getenv('OSS_PASSWORD'))
             }
 
             pom.project {
