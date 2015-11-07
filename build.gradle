@@ -1,6 +1,5 @@
 plugins {
     id 'net.researchgate.release' version '2.3.3'
-    id "com.jfrog.bintray" version "1.4"
 }
 
 apply plugin: 'java'
@@ -32,6 +31,8 @@ dependencies {
 uploadArchives {
     repositories {
         mavenDeployer {
+            ossrhUser = System.getenv('OSS_USER')
+            ossrhPassword = System.getenv('OSS_PASSWORD')
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
@@ -43,22 +44,21 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Rx Docker Client'
+                name 'Rx OkHttp'
                 packaging 'jar'
-                artifactId 'rx-docker-client'
-                description 'RxJava based Docker REST API client for the JVM'
-                url 'https://github.com/shekhargulati/rx-docker-client'
+                artifactId 'rx-okhttp'
+                description 'A think RxJava wrapper around OKHttp'
+                url 'https://github.com/shekhargulati/rx-okhttp'
 
                 scm {
-                    connection 'https://github.com/shekhargulati/rx-docker-client.git'
-                    developerConnection 'https://github.com/shekhargulati/rx-docker-client.git'
-                    url 'https://github.com/shekhargulati/rx-docker-client.git'
+                    connection 'https://github.com/shekhargulati/rx-okhttp.git'
+                    developerConnection 'https://github.com/shekhargulati/rx-okhttp.git'
+                    url 'https://github.com/shekhargulati/rx-okhttp.git'
                 }
 
                 licenses {
                     license {
                         name 'MIT'
-                        url 'https://github.com/shekhargulati/rx-docker-client/blob/master/LICENSE'
                     }
                 }
 
