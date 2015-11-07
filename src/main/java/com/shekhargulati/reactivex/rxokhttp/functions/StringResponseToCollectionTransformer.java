@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 /**
- * A function to convert a String response into a Collection<T>
+ * A function to convert a String response into a Collection
  *
  * @param <T> return value type
  */

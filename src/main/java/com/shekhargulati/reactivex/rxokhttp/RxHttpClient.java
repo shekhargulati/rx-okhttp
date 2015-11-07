@@ -97,7 +97,7 @@ public interface RxHttpClient {
      * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
      *
      * @param endpoint    Endpoint at which to make the GET call
-     * @param transformer function to convert String response into a Collection<R>
+     * @param transformer function to convert String response into a Collection
      * @param <R>         type to convert to
      * @return Observable with multiple R values
      */
@@ -107,7 +107,7 @@ public interface RxHttpClient {
      * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
      *
      * @param endpoint    Endpoint at which to make the GET call
-     * @param transformer function to convert String response into a Collection<R>
+     * @param transformer function to convert String response into a Collection
      * @param headers     HTTP headers to be sent along with the request
      * @param <R>         type to convert to
      * @return Observable with multiple R values
