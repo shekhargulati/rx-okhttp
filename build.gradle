@@ -90,3 +90,20 @@ artifacts {
 signing {
     sign configurations.archives
 }
+
+sourceSets {
+    githubIntegrationTest {
+        java.srcDir file('src/github-itest/java')
+        resources.srcDir file('src/github-itest/resources')
+        compileClasspath = sourceSets.main.output + configurations.testRuntime
+        runtimeClasspath = output + compileClasspath
+    }
+}
+
+task githubITest(type: Test) {
+    description = 'Runs rx-ohttp itest over Github API'
+    group = 'verification'
+    testClassesDir = sourceSets.githubIntegrationTest.output.classesDir
+    classpath = sourceSets.githubIntegrationTest.runtimeClasspath
+    // testResultsDir = file('$testResultsDir/integration')
+}
