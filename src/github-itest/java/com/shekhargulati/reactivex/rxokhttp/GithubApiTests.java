@@ -24,37 +24,63 @@
 
 package com.shekhargulati.reactivex.rxokhttp;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertThat;
 
 public class GithubApiTests {
 
     final String githubApiUrl = "https://api.github.com";
-    RxHttpClient client = RxHttpClient.newRxClient(githubApiUrl);
+    private final RxHttpClient client = RxHttpClient.newRxClient(githubApiUrl);
     private String githubUser = "shekhargulati";
 
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
+
     @Test
-    public void shouldListAllGithubRepositoriesAsJSONForAUser() throws Exception {
+    public void shouldListPublicGithubRepositoriesForAUserAsSingleStringElementObservable() throws Exception {
         final String listUserRepoEndpoint = String.format("/users/%s/repos", githubUser);
         Observable<String> repos = client.get(listUserRepoEndpoint);
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         repos.subscribe(subscriber);
         assertThat(subscriber.getOnNextEvents(), hasSize(1));
         assertThat(subscriber.getOnCompletedEvents(), hasSize(1));
+        assertThat(subscriber.getOnErrorEvents(), hasSize(0));
         subscriber.assertNoErrors();
         subscriber.assertCompleted();
     }
 
     @Test
-    public void shouldListAllGithubRepositoriesAsDomainCollectionForAUser() throws Exception {
-        final String listUserRepoEndpoint = String.format("/users/%s/repos", githubUser);
-        Observable<String> repos = client.get(listUserRepoEndpoint);
-
+    public void shouldThrowExceptionWhenEndpointIsNull() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get(null);
     }
 
+    @Test
+    public void shouldThrowExceptionWhenEndpointIsEmpty() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get("");
+    }
 
+    @Test
+    public void shouldThrowExceptionWhenEndpointHasOnlySpaces() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get("    ");
+    }
+
+    @Test
+    public void shouldListPublicGithubRepositoriesForAUserAsMultiElementStringObservable() throws Exception {
+
+
+    }
 }

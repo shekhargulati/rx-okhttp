@@ -102,7 +102,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseToCollectionTransformer<R> transformer) {
-        Optional.ofNullable(endpoint).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
+        Optional.ofNullable(endpoint).map(String::trim).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
         final String fullEndpointUrl = fullEndpointUrl(endpoint);
         return Observable.create(subscriber -> {
             if (!subscriber.isUnsubscribed()) {

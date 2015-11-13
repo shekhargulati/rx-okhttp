@@ -24,17 +24,17 @@
 
 package com.shekhargulati.reactivex.rxokhttp;
 
-public class CertificateException extends RuntimeException {
+public class SslCertificateException extends RuntimeException {
 
-    public CertificateException(final String message) {
+    public SslCertificateException(final String message) {
         super(message);
     }
 
-    public CertificateException(final String message, final Throwable cause) {
+    public SslCertificateException(final String message, final Throwable cause) {
         super(message, cause);
     }
 
-    public CertificateException(final Throwable cause) {
+    public SslCertificateException(final Throwable cause) {
         super(cause);
     }
 }

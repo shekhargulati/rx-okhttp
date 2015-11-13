@@ -50,14 +50,14 @@ public class SslCertificates {
 
     private final SSLContext sslContext;
 
-    public SslCertificates(final Path certPath) throws CertificateException {
+    public SslCertificates(final Path certPath) throws SslCertificateException {
         this(new Builder().certPath(certPath));
     }
 
-    private SslCertificates(final Builder builder) throws CertificateException {
+    private SslCertificates(final Builder builder) throws SslCertificateException {
         if ((builder.caCertPath == null) || (builder.clientCertPath == null) ||
                 (builder.clientKeyPath == null)) {
-            throw new CertificateException(
+            throw new SslCertificateException(
                     "caCertPath, clientCertPath, and clientKeyPath must all be specified");
         }
 
@@ -99,7 +99,7 @@ public class SslCertificates {
                         KeyStoreException |
                         UnrecoverableKeyException |
                         KeyManagementException e) {
-            throw new CertificateException(e);
+            throw new SslCertificateException(e);
         }
     }
 
@@ -144,7 +144,7 @@ public class SslCertificates {
             return this;
         }
 
-        public SslCertificates build() throws CertificateException {
+        public SslCertificates build() throws SslCertificateException {
             return new SslCertificates(this);
         }
     }
