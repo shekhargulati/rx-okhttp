@@ -24,11 +24,16 @@
 
 package com.shekhargulati.reactivex.rxokhttp;
 
+import com.google.gson.Gson;
+import com.shekhargulati.reactivex.rxokhttp.functions.StringResponseToCollectionTransformer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import rx.Observable;
 import rx.observers.TestSubscriber;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -80,7 +85,20 @@ public class GithubApiTests {
 
     @Test
     public void shouldListPublicGithubRepositoriesForAUserAsMultiElementStringObservable() throws Exception {
-
-
+        final String listUserRepoEndpoint = String.format("/users/%s/repos", githubUser);
+        Observable<String> repos = client.get(listUserRepoEndpoint, (StringResponseToCollectionTransformer<String>) (String json) -> toCollection(json));
+        TestSubscriber<String> subscriber = new TestSubscriber<>();
+        repos.subscribe(subscriber);
+        assertThat(subscriber.getOnNextEvents(), hasSize(30));
+        assertThat(subscriber.getOnCompletedEvents(), hasSize(1));
+        assertThat(subscriber.getOnErrorEvents(), hasSize(0));
+        subscriber.assertNoErrors();
+        subscriber.assertCompleted();
     }
+
+    private List<String> toCollection(String json) {
+        List<String> repos = new Gson().fromJson(json, ArrayList.class);
+        return repos;
+    }
+
 }
