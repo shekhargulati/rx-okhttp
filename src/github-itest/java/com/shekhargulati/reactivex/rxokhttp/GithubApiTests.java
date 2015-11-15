@@ -96,31 +96,6 @@ public class GithubApiTests {
     }
 
     @Test
-    public void shouldResolveFullEndpointUrlWithQueryParameter() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com/", "about-me", QueryParameter.of("msg", "hello"));
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me?msg=hello")));
-    }
-
-    @Test
-    public void shouldResolveFullEndpointUrlWithQueryParameters() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me", QueryParameter.of("msg", "hello"), QueryParameter.of("date", "today"), QueryParameter.of("sortBy", "name"));
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me?msg=hello&date=today&sortBy=name")));
-    }
-
-    @Test
-    public void shouldResolveFullEndpointUrlWithQueryParametersAsNull() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me", null);
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me")));
-    }
-
-    @Test
-    public void shouldResolveFullEndpointUrlWithBaseUrlAndEndpointOnly() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me");
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me")));
-    }
-
-
-    @Test
     public void shouldListReposWhereUserIsOwner() throws Exception {
         final String listUserRepoEndpoint = String.format("/users/%s/repos", githubUser);
         Observable<String> repos = client.get(listUserRepoEndpoint, (StringResponseToCollectionTransformer<String>) this::toCollection, QueryParameter.of("type", "owner"));

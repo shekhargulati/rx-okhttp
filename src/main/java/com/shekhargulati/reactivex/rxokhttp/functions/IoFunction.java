@@ -34,6 +34,7 @@ public interface IoFunction<T, R> {
      *
      * @param t the function argument
      * @return the function result
+     * @throws java.io.IOException can throw IOException
      */
     R apply(T t) throws IOException;
 

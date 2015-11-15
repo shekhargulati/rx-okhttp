@@ -74,6 +74,7 @@ public interface RxHttpClient {
      * The returned Observable will only have a single element.
      *
      * @param endpoint Endpoint at which to make the GET call
+     * @param queryParameters Query parameters that will be use to build the final url
      * @return Observable with single String value
      */
     Observable<String> get(String endpoint, QueryParameter... queryParameters);
@@ -83,6 +84,7 @@ public interface RxHttpClient {
      * The returned Observable will only have a single element.
      *
      * @param endpoint Endpoint at which to make the GET call
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param headers  Http headers that you want to pass along
      * @return Observable with single String value
      */
@@ -93,6 +95,7 @@ public interface RxHttpClient {
      *
      * @param endpoint    Endpoint at which to make the GET call
      * @param transformer function to convert String response into some other domain object
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param <R>         type returned by StringResponseTransformer
      * @return Observable with single R value
      */
@@ -104,6 +107,7 @@ public interface RxHttpClient {
      * @param endpoint    Endpoint at which to make the GET call
      * @param headers     HTTP headers to be sent along with the request
      * @param transformer function to convert String response into some other domain object
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param <R>         type returned by StringResponseTransformer
      * @return Observable with single R value
      */
@@ -114,6 +118,7 @@ public interface RxHttpClient {
      *
      * @param endpoint    Endpoint at which to make the GET call
      * @param transformer function to convert String response into a Collection
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param <R>         type to convert to
      * @return Observable with multiple R values
      */
@@ -125,6 +130,7 @@ public interface RxHttpClient {
      * @param endpoint    Endpoint at which to make the GET call
      * @param transformer function to convert String response into a Collection
      * @param headers     HTTP headers to be sent along with the request
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param <R>         type to convert to
      * @return Observable with multiple R values
      */
@@ -135,6 +141,7 @@ public interface RxHttpClient {
      *
      * @param endpoint    Endpoint at which to make the GET call
      * @param transformer a function to convert Response to R
+     * @param queryParameters Query parameters that will be use to build the final url
      * @param <R>         type to convert to
      * @return Observable with single R value
      */
