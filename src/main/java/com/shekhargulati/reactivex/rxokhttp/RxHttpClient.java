@@ -32,6 +32,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface RxHttpClient {
 
@@ -53,6 +55,20 @@ public interface RxHttpClient {
         return new OkHttpBasedRxHttpClient(apiUrl);
     }
 
+    static String fullEndpointUrl(String baseApiUrl, String endpoint, QueryParameter... queryParameters) throws IllegalArgumentException {
+        baseApiUrl = Optional.ofNullable(baseApiUrl)
+                .filter(e -> e.trim().length() > 0)
+                .map(e -> e.endsWith("/") ? e.substring(0, e.lastIndexOf("/")) : e)
+                .orElseThrow(() -> new IllegalArgumentException("baseApiUrl can't be null or empty"));
+        endpoint = Optional.ofNullable(endpoint)
+                .filter(e -> e.trim().length() > 0)
+                .map(e -> e.startsWith("/") ? e : "/" + e)
+                .orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty"));
+        String queryString = Optional.ofNullable(queryParameters).map(qps -> Stream.of(qps).map(qp -> String.format("%s=%s", qp.param(), qp.value())).collect(Collectors.joining("&", "?", ""))).orElse("");
+        queryString = queryString.endsWith("?") ? "" : queryString;
+        return baseApiUrl + endpoint + queryString;
+    }
+
     /**
      * This method makes an HTTP GET request and return response body as String of Observable
      * The returned Observable will only have a single element.
@@ -60,7 +76,7 @@ public interface RxHttpClient {
      * @param endpoint Endpoint at which to make the GET call
      * @return Observable with single String value
      */
-    Observable<String> get(String endpoint);
+    Observable<String> get(String endpoint, QueryParameter... queryParameters);
 
     /**
      * This method makes an HTTP GET request and return response body as String of Observable.
@@ -70,7 +86,7 @@ public interface RxHttpClient {
      * @param headers  Http headers that you want to pass along
      * @return Observable with single String value
      */
-    Observable<String> get(String endpoint, Map<String, String> headers);
+    Observable<String> get(String endpoint, Map<String, String> headers, QueryParameter... queryParameters);
 
     /**
      * This method makes an HTTP GET request and then convert the resultant JSON into R using the StringResponseTransformer function
@@ -80,7 +96,7 @@ public interface RxHttpClient {
      * @param <R>         type returned by StringResponseTransformer
      * @return Observable with single R value
      */
-    <R> Observable<R> get(final String endpoint, StringResponseTransformer<R> transformer);
+    <R> Observable<R> get(final String endpoint, StringResponseTransformer<R> transformer, QueryParameter... queryParameters);
 
     /**
      * This method makes an HTTP GET request and then convert the resultant JSON into R using the StringResponseTransformer function
@@ -91,7 +107,7 @@ public interface RxHttpClient {
      * @param <R>         type returned by StringResponseTransformer
      * @return Observable with single R value
      */
-    <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseTransformer<R> transformer);
+    <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseTransformer<R> transformer, QueryParameter... queryParameters);
 
     /**
      * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
@@ -101,7 +117,7 @@ public interface RxHttpClient {
      * @param <R>         type to convert to
      * @return Observable with multiple R values
      */
-    <R> Observable<R> get(String endpoint, StringResponseToCollectionTransformer<R> transformer);
+    <R> Observable<R> get(String endpoint, StringResponseToCollectionTransformer<R> transformer, QueryParameter... queryParameters);
 
     /**
      * This methods makes an HTTP GET request, then convert the result JSON into a Collection using StringResponseToCollectionTransformer, and finally returns an Observable with elements equal to number of elements in the Collection.
@@ -112,7 +128,7 @@ public interface RxHttpClient {
      * @param <R>         type to convert to
      * @return Observable with multiple R values
      */
-    <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseToCollectionTransformer<R> transformer);
+    <R> Observable<R> get(String endpoint, Map<String, String> headers, StringResponseToCollectionTransformer<R> transformer, QueryParameter... queryParameters);
 
     /**
      * This method makes an HTTP GET request and allows users to tranform the OkHttp Response directly.
@@ -122,19 +138,19 @@ public interface RxHttpClient {
      * @param <R>         type to convert to
      * @return Observable with single R value
      */
-    <R> Observable<R> get(String endpoint, ResponseTransformer<R> transformer);
+    <R> Observable<R> get(String endpoint, ResponseTransformer<R> transformer, QueryParameter... queryParameters);
 
-    Observable<String> getResponseStream(String endpoint);
+    Observable<String> getResponseStream(String endpoint, QueryParameter... queryParameters);
 
-    Observable<String> getResponseStream(String endpoint, Map<String, String> headers);
+    Observable<String> getResponseStream(String endpoint, Map<String, String> headers, QueryParameter... queryParameters);
 
-    <T> Observable<T> getResponseStream(String endpoint, Map<String, String> headers, StringResponseTransformer<T> transformer);
+    <T> Observable<T> getResponseStream(String endpoint, Map<String, String> headers, StringResponseTransformer<T> transformer, QueryParameter... queryParameters);
 
-    Observable<Buffer> getResponseBufferStream(String endpoint);
+    Observable<Buffer> getResponseBufferStream(String endpoint, QueryParameter... queryParameters);
 
-    <T> Observable<T> getResponseStream(String endpoint, StringResponseTransformer<T> transformer);
+    <T> Observable<T> getResponseStream(String endpoint, StringResponseTransformer<T> transformer, QueryParameter... queryParameters);
 
-    Observable<HttpStatus> getResponseHttpStatus(String endpointPath);
+    Observable<HttpStatus> getResponseHttpStatus(String endpointPath, QueryParameter... queryParameters);
 
     Observable<HttpStatus> post(String endpoint);
 

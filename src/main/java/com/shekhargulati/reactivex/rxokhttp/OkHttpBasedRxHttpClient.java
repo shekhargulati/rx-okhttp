@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 class OkHttpBasedRxHttpClient implements RxHttpClient {
@@ -72,38 +71,37 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         }
         client.setFollowRedirects(true);
         client.setFollowSslRedirects(true);
-        client.setReadTimeout(0, TimeUnit.HOURS);
     }
 
     @Override
-    public Observable<String> get(final String endpoint) {
-        return get(endpoint, StringResponseTransformer.identityOp());
+    public Observable<String> get(final String endpoint, QueryParameter... queryParameters) {
+        return get(endpoint, StringResponseTransformer.identityOp(), queryParameters);
     }
 
     @Override
-    public Observable<String> get(final String endpoint, final Map<String, String> headers) {
-        return get(endpoint, headers, StringResponseTransformer.identityOp());
+    public Observable<String> get(final String endpoint, final Map<String, String> headers, QueryParameter... queryParameters) {
+        return get(endpoint, headers, StringResponseTransformer.identityOp(), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> get(final String endpoint, final StringResponseTransformer<R> transformer) {
-        return get(endpoint, Collections.emptyMap(), transformer);
+    public <R> Observable<R> get(final String endpoint, final StringResponseTransformer<R> transformer, QueryParameter... queryParameters) {
+        return get(endpoint, Collections.emptyMap(), transformer, queryParameters);
     }
 
     @Override
-    public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseTransformer<R> transformer) {
-        return get(endpoint, headers, transformer.toCollectionTransformer());
+    public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseTransformer<R> transformer, QueryParameter... queryParameters) {
+        return get(endpoint, headers, transformer.toCollectionTransformer(), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> get(final String endpoint, final StringResponseToCollectionTransformer<R> transformer) {
-        return get(endpoint, Collections.emptyMap(), transformer);
+    public <R> Observable<R> get(final String endpoint, final StringResponseToCollectionTransformer<R> transformer, QueryParameter... queryParameters) {
+        return get(endpoint, Collections.emptyMap(), transformer, queryParameters);
     }
 
     @Override
-    public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseToCollectionTransformer<R> transformer) {
+    public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseToCollectionTransformer<R> transformer, QueryParameter... queryParameters) {
         Optional.ofNullable(endpoint).map(String::trim).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             if (!subscriber.isUnsubscribed()) {
                 try {
@@ -128,13 +126,13 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public <T> Observable<T> getResponseStream(final String endpoint, final StringResponseTransformer<T> transformer) {
-        return getResponseStream(endpoint, Collections.emptyMap(), transformer);
+    public <T> Observable<T> getResponseStream(final String endpoint, final StringResponseTransformer<T> transformer, QueryParameter... queryParameters) {
+        return getResponseStream(endpoint, Collections.emptyMap(), transformer, queryParameters);
     }
 
     @Override
-    public <T> Observable<T> getResponseStream(final String endpoint, final Map<String, String> headers, final StringResponseTransformer<T> transformer) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+    public <T> Observable<T> getResponseStream(final String endpoint, final Map<String, String> headers, final StringResponseTransformer<T> transformer, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl, headers);
@@ -159,13 +157,13 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public Observable<String> getResponseStream(final String endpoint, final Map<String, String> headers) {
-        return getResponseStream(endpoint, headers, StringResponseTransformer.identityOp());
+    public Observable<String> getResponseStream(final String endpoint, final Map<String, String> headers, QueryParameter... queryParameters) {
+        return getResponseStream(endpoint, headers, StringResponseTransformer.identityOp(), queryParameters);
     }
 
     @Override
-    public Observable<Buffer> getResponseBufferStream(final String endpoint) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+    public Observable<Buffer> getResponseBufferStream(final String endpoint, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl);
@@ -190,18 +188,18 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public Observable<String> getResponseStream(final String endpoint) {
-        return getResponseStream(endpoint, Collections.emptyMap());
+    public Observable<String> getResponseStream(final String endpoint, QueryParameter... queryParameters) {
+        return getResponseStream(endpoint, Collections.emptyMap(), queryParameters);
     }
 
     @Override
-    public Observable<HttpStatus> getResponseHttpStatus(final String endpointPath) {
-        return get(endpointPath, ResponseTransformer.httpStatus());
+    public Observable<HttpStatus> getResponseHttpStatus(final String endpointPath, QueryParameter... queryParameters) {
+        return get(endpointPath, ResponseTransformer.httpStatus(), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> get(final String endpoint, final ResponseTransformer<R> transformer) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+    public <R> Observable<R> get(final String endpoint, final ResponseTransformer<R> transformer, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl);
@@ -260,7 +258,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpPostRequest(fullEndpointUrl, headers, postBody);
@@ -294,7 +292,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, final String postBody, Predicate<String> errorChecker) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber -> {
             try {
                 RequestBody requestBody = new RequestBody() {
@@ -365,7 +363,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
             }
         };
 
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber ->
                 {
                     try {
@@ -398,7 +396,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<HttpStatus> delete(String endpoint, Map<String, String> headers) {
-        final String fullEndpointUrl = fullEndpointUrl(endpoint);
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpDeleteRequest(fullEndpointUrl, headers);
@@ -444,13 +442,6 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         return response;
     }
 
-    private String fullEndpointUrl(final String endpoint) throws IllegalArgumentException {
-        return Optional.ofNullable(endpoint)
-                .filter(e -> e.trim().length() > 0)
-                .map(e -> e.startsWith("/") ? e : "/" + e)
-                .map(e -> baseApiUrl + e)
-                .orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty"));
-    }
 
     private Response makeHttpPostRequest(String fullEndpointUrl, Map<String, String> headers, String body) throws IOException {
         RequestBody requestBody = RequestBody.create(JSON, body);
