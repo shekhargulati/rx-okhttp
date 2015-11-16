@@ -1,6 +1,6 @@
 # Reactive OkHttp [![Build Status](https://travis-ci.org/shekhargulati/rx-okhttp.svg)](https://travis-ci.org/shekhargulati/rx-okhttp)
 
-A think RxJava Observable wrapper around OKHttp.
+A think RxJava Observable wrapper around OKHttp. You can use it to build reactive REST API clients. [rx-docker-client](https://github.com/shekhargulati/rx-docker-client) uses this API.
 
 
 Getting Started
