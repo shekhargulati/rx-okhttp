@@ -26,7 +26,9 @@ package com.shekhargulati.reactivex;
 
 import com.shekhargulati.reactivex.rxokhttp.QueryParameter;
 import com.shekhargulati.reactivex.rxokhttp.RxHttpClient;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -34,28 +36,54 @@ import static org.junit.Assert.assertThat;
 
 public class RxHttpClientTest {
 
+    private final RxHttpClient client = RxHttpClient.newRxClient("http://example.com");
+
+    @Rule
+    public ExpectedException exceptionRule = ExpectedException.none();
+
+    @Test
+    public void shouldThrowExceptionWhenEndpointIsNull() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get(null);
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenEndpointIsEmpty() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get("");
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenEndpointHasOnlySpaces() throws Exception {
+        exceptionRule.expect(IllegalArgumentException.class);
+        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
+        client.get("    ");
+    }
+
     @Test
     public void shouldResolveFullEndpointUrlWithQueryParameter() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com/", "about-me", QueryParameter.of("msg", "hello"));
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me?msg=hello")));
+        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://example.com/", "about-me", QueryParameter.of("msg", "hello"));
+        assertThat(fullEndpointUrl, is(equalTo("http://example.com/about-me?msg=hello")));
     }
 
     @Test
     public void shouldResolveFullEndpointUrlWithQueryParameters() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me", QueryParameter.of("msg", "hello"), QueryParameter.of("date", "today"), QueryParameter.of("sortBy", "name"));
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me?msg=hello&date=today&sortBy=name")));
+        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://example.com", "about-me", QueryParameter.of("msg", "hello"), QueryParameter.of("date", "today"), QueryParameter.of("sortBy", "name"));
+        assertThat(fullEndpointUrl, is(equalTo("http://example.com/about-me?msg=hello&date=today&sortBy=name")));
     }
 
     @Test
     public void shouldResolveFullEndpointUrlWithQueryParametersAsNull() throws Exception {
         QueryParameter[] queryParameters = null;
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me", queryParameters);
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me")));
+        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://example.com", "about-me", queryParameters);
+        assertThat(fullEndpointUrl, is(equalTo("http://example.com/about-me")));
     }
 
     @Test
     public void shouldResolveFullEndpointUrlWithBaseUrlAndEndpointOnly() throws Exception {
-        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://shekhargulati.com", "about-me");
-        assertThat(fullEndpointUrl, is(equalTo("http://shekhargulati.com/about-me")));
+        String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://example.com", "about-me");
+        assertThat(fullEndpointUrl, is(equalTo("http://example.com/about-me")));
     }
 }

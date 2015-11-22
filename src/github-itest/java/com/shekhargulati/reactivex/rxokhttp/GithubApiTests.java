@@ -34,8 +34,6 @@ import rx.observers.TestSubscriber;
 
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertThat;
 
@@ -62,30 +60,9 @@ public class GithubApiTests {
     }
 
     @Test
-    public void shouldThrowExceptionWhenEndpointIsNull() throws Exception {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
-        client.get(null);
-    }
-
-    @Test
-    public void shouldThrowExceptionWhenEndpointIsEmpty() throws Exception {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
-        client.get("");
-    }
-
-    @Test
-    public void shouldThrowExceptionWhenEndpointHasOnlySpaces() throws Exception {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage(is(equalTo("endpoint can't be null or empty.")));
-        client.get("    ");
-    }
-
-    @Test
     public void shouldListPublicGithubRepositoriesForAUserAsMultiElementStringObservable() throws Exception {
         final String listUserRepoEndpoint = String.format("/users/%s/repos", githubUser);
-        Observable<String> repos = client.get(listUserRepoEndpoint, (StringResponseToCollectionTransformer<String>) (String json) -> toCollection(json));
+        Observable<String> repos = client.get(listUserRepoEndpoint, (String json) -> toCollection(json));
         TestSubscriber<String> subscriber = new TestSubscriber<>();
         repos.subscribe(subscriber);
         assertThat(subscriber.getOnNextEvents(), hasSize(30));
