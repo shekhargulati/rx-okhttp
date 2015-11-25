@@ -24,11 +24,17 @@
 
 package com.shekhargulati.reactivex;
 
+import com.shekhargulati.reactivex.rxokhttp.HttpStatus;
 import com.shekhargulati.reactivex.rxokhttp.QueryParameter;
 import com.shekhargulati.reactivex.rxokhttp.RxHttpClient;
+import com.squareup.okhttp.HttpUrl;
+import com.squareup.okhttp.mockwebserver.MockResponse;
+import com.squareup.okhttp.mockwebserver.MockWebServer;
+import com.squareup.okhttp.mockwebserver.RecordedRequest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import rx.Observable;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -85,5 +91,24 @@ public class RxHttpClientTest {
     public void shouldResolveFullEndpointUrlWithBaseUrlAndEndpointOnly() throws Exception {
         String fullEndpointUrl = RxHttpClient.fullEndpointUrl("http://example.com", "about-me");
         assertThat(fullEndpointUrl, is(equalTo("http://example.com/about-me")));
+    }
+
+    @Test
+    public void shouldMakeAPostRequestWithQueryParameters() throws Exception {
+        MockWebServer mockWebServer = new MockWebServer();
+
+        mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK"));
+        mockWebServer.start();
+        HttpUrl url = mockWebServer.url("/contact-me");
+
+        RxHttpClient client = RxHttpClient.newRxClient(url.toString());
+        Observable<HttpStatus> statusObservable = client.post("/form", QueryParameter.of("name", "shekhar"));
+        HttpStatus httpStatus = statusObservable.toBlocking().first();
+        assertThat(httpStatus.code(), equalTo(200));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        String path = recordedRequest.getPath();
+        assertThat(path, equalTo("/contact-me/form?name=shekhar"));
+
     }
 }

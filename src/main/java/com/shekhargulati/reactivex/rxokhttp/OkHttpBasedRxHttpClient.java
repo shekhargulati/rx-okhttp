@@ -217,48 +217,48 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public Observable<HttpStatus> post(final String endpoint) {
-        return post(endpoint, EMPTY_BODY);
+    public Observable<HttpStatus> post(final String endpoint, QueryParameter... queryParameters) {
+        return post(endpoint, EMPTY_BODY, queryParameters);
     }
 
     @Override
-    public Observable<HttpStatus> post(String endpoint, Map<String, String> headers) {
-        return post(endpoint, headers, EMPTY_BODY);
+    public Observable<HttpStatus> post(String endpoint, Map<String, String> headers, QueryParameter... queryParameters) {
+        return post(endpoint, headers, EMPTY_BODY, queryParameters);
     }
 
     @Override
-    public Observable<HttpStatus> post(final String endpoint, String body) {
-        return post(endpoint, body, ResponseTransformer.httpStatus());
+    public Observable<HttpStatus> post(final String endpoint, String body, QueryParameter... queryParameters) {
+        return post(endpoint, body, ResponseTransformer.httpStatus(), queryParameters);
     }
 
     @Override
-    public Observable<HttpStatus> post(final String endpoint, final Map<String, String> headers, final String body) {
-        return post(endpoint, headers, body, ResponseTransformer.httpStatus());
+    public Observable<HttpStatus> post(final String endpoint, final Map<String, String> headers, final String body, QueryParameter... queryParameters) {
+        return post(endpoint, headers, body, ResponseTransformer.httpStatus(), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> post(final String endpoint, final ResponseBodyTransformer<R> bodyTransformer) {
-        return post(endpoint, EMPTY_BODY, ResponseTransformer.fromBody(bodyTransformer));
+    public <R> Observable<R> post(final String endpoint, final ResponseBodyTransformer<R> bodyTransformer, QueryParameter... queryParameters) {
+        return post(endpoint, EMPTY_BODY, ResponseTransformer.fromBody(bodyTransformer), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> post(String endpoint, Map<String, String> headers, ResponseBodyTransformer<R> bodyTransformer) {
-        return post(endpoint, EMPTY_BODY, bodyTransformer);
+    public <R> Observable<R> post(String endpoint, Map<String, String> headers, ResponseBodyTransformer<R> bodyTransformer, QueryParameter... queryParameters) {
+        return post(endpoint, EMPTY_BODY, bodyTransformer, queryParameters);
     }
 
     @Override
-    public <R> Observable<R> post(final String endpoint, final String postBody, final ResponseBodyTransformer<R> bodyTransformer) {
-        return post(endpoint, postBody, ResponseTransformer.fromBody(bodyTransformer));
+    public <R> Observable<R> post(final String endpoint, final String postBody, final ResponseBodyTransformer<R> bodyTransformer, QueryParameter... queryParameters) {
+        return post(endpoint, postBody, ResponseTransformer.fromBody(bodyTransformer), queryParameters);
     }
 
     @Override
-    public <R> Observable<R> post(final String endpoint, final String postBody, final ResponseTransformer<R> transformer) {
-        return post(endpoint, Collections.emptyMap(), postBody, transformer);
+    public <R> Observable<R> post(final String endpoint, final String postBody, final ResponseTransformer<R> transformer, QueryParameter... queryParameters) {
+        return post(endpoint, Collections.emptyMap(), postBody, transformer, queryParameters);
     }
 
     @Override
-    public <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
+    public <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpPostRequest(fullEndpointUrl, headers, postBody);
