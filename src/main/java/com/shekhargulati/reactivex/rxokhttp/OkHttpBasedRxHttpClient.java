@@ -277,17 +277,17 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<String> postAndReceiveResponse(final String endpoint, QueryParameter... queryParameters) {
-        return postAndReceiveResponse(endpoint, Collections.emptyMap(), EMPTY_BODY, t -> false);
+        return postAndReceiveResponse(endpoint, Collections.emptyMap(), EMPTY_BODY, t -> false, queryParameters);
     }
 
     @Override
     public Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers, QueryParameter... queryParameters) {
-        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, t -> false);
+        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, t -> false, queryParameters);
     }
 
     @Override
     public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, Predicate<String> errorChecker, QueryParameter... queryParameters) {
-        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, errorChecker);
+        return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, errorChecker, queryParameters);
     }
 
     @Override
