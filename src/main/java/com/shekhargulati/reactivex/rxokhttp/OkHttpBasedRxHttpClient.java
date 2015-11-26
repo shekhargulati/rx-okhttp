@@ -276,23 +276,23 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(final String endpoint) {
+    public Observable<String> postAndReceiveResponse(final String endpoint, QueryParameter... queryParameters) {
         return postAndReceiveResponse(endpoint, Collections.emptyMap(), EMPTY_BODY, t -> false);
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers) {
+    public Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers, QueryParameter... queryParameters) {
         return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, t -> false);
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, Predicate<String> errorChecker) {
+    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, Predicate<String> errorChecker, QueryParameter... queryParameters) {
         return postAndReceiveResponse(endpoint, headers, EMPTY_BODY, errorChecker);
     }
 
     @Override
-    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, final String postBody, Predicate<String> errorChecker) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
+    public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, final String postBody, Predicate<String> errorChecker, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 RequestBody requestBody = new RequestBody() {
