@@ -3,5 +3,7 @@ install: ./gradlew assemble -x :signArchives
 script: ./gradlew clean build -x :signArchives
 jdk:
   - oraclejdk8
+before_install:
+  - pip install codecov
 after_success:
   - codecov

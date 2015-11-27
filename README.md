@@ -1,4 +1,4 @@
-# Reactive OkHttp [![Build Status](https://travis-ci.org/shekhargulati/rx-okhttp.svg)](https://travis-ci.org/shekhargulati/rx-okhttp)
+# Reactive OkHttp [![Build Status](https://travis-ci.org/shekhargulati/rx-okhttp.svg)](https://travis-ci.org/shekhargulati/rx-okhttp)[![codecov.io](https://codecov.io/github/shekhargulati/rx-okhttp/coverage.svg?branch=master)](https://codecov.io/github/shekhargulati/rx-okhttp?branch=master)
 
 A think RxJava Observable wrapper around OKHttp. You can use it to build reactive REST API clients. [rx-docker-client](https://github.com/shekhargulati/rx-docker-client) uses this API.
 
