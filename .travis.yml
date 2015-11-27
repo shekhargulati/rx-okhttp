@@ -1,6 +1,6 @@
 language: java
 install: ./gradlew assemble -x :signArchives
-script: ./gradlew clean build -x :signArchives
+script: ./gradlew clean build jacocoTestReport -x :signArchives
 sudo: required
 jdk:
   - oraclejdk8
