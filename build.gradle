@@ -6,6 +6,7 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: "jacoco"
 
 sourceCompatibility = 1.8
 
@@ -16,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.squareup.okhttp:okhttp:2.5.0'
+    compile 'com.squareup.okhttp:okhttp:2.6.0'
     compile 'io.reactivex:rxjava:1.0.15'
     compile 'org.apache.httpcomponents:httpclient:4.3.5'
     compile 'org.bouncycastle:bcpkix-jdk15on:1.51'
@@ -92,19 +93,6 @@ signing {
     sign configurations.archives
 }
 
-sourceSets {
-    githubIntegrationTest {
-        java.srcDir file('src/github-itest/java')
-        resources.srcDir file('src/github-itest/resources')
-        compileClasspath = sourceSets.main.output + configurations.testRuntime
-        runtimeClasspath = output + compileClasspath
-    }
-}
-
-task githubITest(type: Test) {
-    description = 'Runs rx-ohttp itest over Github API'
-    group = 'verification'
-    testClassesDir = sourceSets.githubIntegrationTest.output.classesDir
-    classpath = sourceSets.githubIntegrationTest.runtimeClasspath
-    // testResultsDir = file('$testResultsDir/integration')
+jacoco {
+    toolVersion = "0.7.5.201505241946"
 }

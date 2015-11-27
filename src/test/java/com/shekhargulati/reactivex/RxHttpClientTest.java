@@ -97,7 +97,8 @@ public class RxHttpClientTest {
     public void shouldMakeAPostRequestWithQueryParameters() throws Exception {
         MockWebServer mockWebServer = new MockWebServer();
 
-        mockWebServer.enqueue(new MockResponse().setStatus("HTTP/1.1 200 OK"));
+        MockResponse response = new MockResponse();
+        mockWebServer.enqueue(response.setStatus("HTTP/1.1 200 OK"));
         mockWebServer.start();
         HttpUrl url = mockWebServer.url("/contact-me");
 
@@ -109,6 +110,30 @@ public class RxHttpClientTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         String path = recordedRequest.getPath();
         assertThat(path, equalTo("/contact-me/form?name=shekhar"));
+        mockWebServer.shutdown();
+    }
 
+    @Test
+    public void shouldMakeAPostAndReceiveResponseRequestWithQueryParameters() throws Exception {
+        MockWebServer mockWebServer = new MockWebServer();
+
+        MockResponse response = new MockResponse().setBody("hello");
+
+        mockWebServer.enqueue(response);
+        mockWebServer.start();
+
+        HttpUrl url = mockWebServer.url("/contact-me");
+
+        RxHttpClient client = RxHttpClient.newRxClient(url.toString());
+
+        Observable<String> statusObservable = client.postAndReceiveResponse("/form", QueryParameter.of("name", "shekhar"));
+        assertThat(statusObservable.toBlocking().first(), equalTo("hello"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        String path = recordedRequest.getPath();
+        assertThat(path, equalTo("/contact-me/form?name=shekhar"));
+        assertThat(recordedRequest.getMethod(), equalTo("POST"));
+
+        mockWebServer.shutdown();
     }
 }
