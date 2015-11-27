@@ -1,9 +1,10 @@
 language: java
 install: ./gradlew assemble -x :signArchives
 script: ./gradlew clean build -x :signArchives
+sudo: required
 jdk:
   - oraclejdk8
 before_install:
-  - pip install codecov
+  - sudo pip install codecov
 after_success:
   - codecov
