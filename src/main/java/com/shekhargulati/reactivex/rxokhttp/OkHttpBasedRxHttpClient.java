@@ -37,11 +37,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+
+import static com.shekhargulati.reactivex.rxokhttp.RxHttpClient.fullEndpointUrl;
 
 class OkHttpBasedRxHttpClient implements RxHttpClient {
 
@@ -54,23 +58,41 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     private final OkHttpClient client = new OkHttpClient();
     private final String baseApiUrl;
 
-    public OkHttpBasedRxHttpClient(String baseApiUrl) {
+    public OkHttpBasedRxHttpClient(final String baseApiUrl, final ClientConfig clientConfig) {
         this.baseApiUrl = baseApiUrl;
+        setClientConfig(clientConfig);
     }
 
-    OkHttpBasedRxHttpClient(final String host, final int port) {
-        this(host, port, Optional.empty());
+    OkHttpBasedRxHttpClient(final String host, final int port, ClientConfig clientConfig) {
+        this(host, port, Optional.empty(), clientConfig);
     }
 
-    OkHttpBasedRxHttpClient(final String host, final int port, final Optional<String> certPath) {
+    OkHttpBasedRxHttpClient(final String host, final int port, final Optional<String> certPath, ClientConfig clientConfig) {
         final String scheme = certPath.isPresent() ? "https" : "http";
         baseApiUrl = scheme + "://" + host + ":" + port;
         logger.info("Base API uri {}", baseApiUrl);
         if (certPath.isPresent()) {
             client.setSslSocketFactory(new SslCertificates(Paths.get(certPath.get())).sslContext().getSocketFactory());
         }
-        client.setFollowRedirects(true);
-        client.setFollowSslRedirects(true);
+        setClientConfig(clientConfig);
+    }
+
+    private void setClientConfig(ClientConfig clientConfig) {
+        client.setFollowRedirects(clientConfig.isFollowRedirects());
+        client.setFollowSslRedirects(clientConfig.isFollowSslRedirects());
+        client.setRetryOnConnectionFailure(clientConfig.isRetryOnConnectionFailure());
+        Duration readTimeout = clientConfig.getReadTimeout();
+        if (readTimeout != null) {
+            client.setReadTimeout(readTimeout.getSeconds(), TimeUnit.SECONDS);
+        }
+        Duration writeTimeout = clientConfig.getWriteTimeout();
+        if (writeTimeout != null) {
+            client.setWriteTimeout(writeTimeout.getSeconds(), TimeUnit.SECONDS);
+        }
+        Duration connectTimeout = clientConfig.getConnectTimeout();
+        if (connectTimeout != null) {
+            client.setConnectTimeout(connectTimeout.getSeconds(), TimeUnit.SECONDS);
+        }
     }
 
     @Override
@@ -101,7 +123,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     @Override
     public <R> Observable<R> get(final String endpoint, final Map<String, String> headers, final StringResponseToCollectionTransformer<R> transformer, QueryParameter... queryParameters) {
         Optional.ofNullable(endpoint).map(String::trim).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             if (!subscriber.isUnsubscribed()) {
                 try {
@@ -132,7 +154,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <T> Observable<T> getResponseStream(final String endpoint, final Map<String, String> headers, final StringResponseTransformer<T> transformer, QueryParameter... queryParameters) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl, headers);
@@ -163,7 +185,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<Buffer> getResponseBufferStream(final String endpoint, QueryParameter... queryParameters) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl);
@@ -199,7 +221,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <R> Observable<R> get(final String endpoint, final ResponseTransformer<R> transformer, QueryParameter... queryParameters) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpGetRequest(fullEndpointUrl);
@@ -258,7 +280,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public <R> Observable<R> post(String endpoint, Map<String, String> headers, String postBody, ResponseTransformer<R> transformer, QueryParameter... queryParameters) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpPostRequest(fullEndpointUrl, headers, postBody);
@@ -292,7 +314,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<String> postAndReceiveResponse(final String endpoint, Map<String, String> headers, final String postBody, Predicate<String> errorChecker, QueryParameter... queryParameters) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 RequestBody requestBody = new RequestBody() {
@@ -363,7 +385,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
             }
         };
 
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber ->
                 {
                     try {
@@ -396,7 +418,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
 
     @Override
     public Observable<HttpStatus> delete(String endpoint, Map<String, String> headers) {
-        final String fullEndpointUrl = RxHttpClient.fullEndpointUrl(baseApiUrl, endpoint);
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpDeleteRequest(fullEndpointUrl, headers);
@@ -458,5 +480,9 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         logger.info("Making POST request to {}", fullEndpointUrl);
         Call call = client.newCall(getRequest);
         return call.execute();
+    }
+
+    OkHttpClient getClient() {
+        return client;
     }
 }

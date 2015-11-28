@@ -22,12 +22,10 @@
  * THE SOFTWARE.
  */
 
-package com.shekhargulati.reactivex;
+package com.shekhargulati.reactivex.rxokhttp;
 
-import com.shekhargulati.reactivex.rxokhttp.HttpStatus;
-import com.shekhargulati.reactivex.rxokhttp.QueryParameter;
-import com.shekhargulati.reactivex.rxokhttp.RxHttpClient;
 import com.squareup.okhttp.HttpUrl;
+import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
@@ -36,9 +34,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import rx.Observable;
 
+import java.time.Duration;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class RxHttpClientTest {
 
@@ -135,5 +135,26 @@ public class RxHttpClientTest {
         assertThat(recordedRequest.getMethod(), equalTo("POST"));
 
         mockWebServer.shutdown();
+    }
+
+    @Test
+    public void shouldCreateClientInstanceUsingConfiguration() throws Exception {
+        ClientConfigBuilder configBuilder = new ClientConfigBuilder()
+                .setConnectTimeout(Duration.ofSeconds(30))
+                .setWriteTimeout(Duration.ofMinutes(2))
+                .setRetryOnConnectionFailure(false)
+                .setReadTimeout(Duration.ofHours(1));
+
+        ClientConfig clientConfig = configBuilder.createClientConfig();
+
+        OkHttpBasedRxHttpClient rxHttpClient = (OkHttpBasedRxHttpClient) RxHttpClient.newRxClient("http://google.com", clientConfig);
+        OkHttpClient client = rxHttpClient.getClient();
+        assertTrue(client.getFollowRedirects());
+        assertTrue(client.getFollowSslRedirects());
+        assertFalse(client.getRetryOnConnectionFailure());
+        assertThat((long) client.getConnectTimeout(), equalTo(Duration.ofSeconds(30).toMillis()));
+        assertThat((long) client.getWriteTimeout(), equalTo(Duration.ofMinutes(2).toMillis()));
+        assertThat((long) client.getReadTimeout(), equalTo(Duration.ofHours(1).toMillis()));
+
     }
 }

@@ -35,25 +35,40 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.shekhargulati.reactivex.rxokhttp.ClientConfig.defaultConfig;
+
 public interface RxHttpClient {
 
-    public static final String EMPTY_BODY = "";
+    String EMPTY_BODY = "";
+
+    static RxHttpClient newRxClient(final String apiUrl) {
+        return newRxClient(apiUrl, defaultConfig());
+    }
+
+    static RxHttpClient newRxClient(final String apiUrl, ClientConfig config) {
+        return new OkHttpBasedRxHttpClient(apiUrl, config);
+    }
 
     static RxHttpClient newRxClient(final String host, final int port) {
-        return new OkHttpBasedRxHttpClient(host, port);
+        return newRxClient(host, port, defaultConfig());
+    }
+
+    static RxHttpClient newRxClient(final String host, final int port, ClientConfig clientConfig) {
+        return new OkHttpBasedRxHttpClient(host, port, clientConfig);
     }
 
     static RxHttpClient newRxClient(final String host, final int port, String certPath) {
-        return newRxClient(host, port, Optional.ofNullable(certPath));
+        return newRxClient(host, port, Optional.ofNullable(certPath), defaultConfig());
     }
 
-    static RxHttpClient newRxClient(final String host, final int port, Optional<String> certPath) {
-        return new OkHttpBasedRxHttpClient(host, port, certPath);
+    static RxHttpClient newRxClient(final String host, final int port, String certPath, ClientConfig clientConfig) {
+        return newRxClient(host, port, Optional.ofNullable(certPath), clientConfig);
     }
 
-    static RxHttpClient newRxClient(final String apiUrl) {
-        return new OkHttpBasedRxHttpClient(apiUrl);
+    static RxHttpClient newRxClient(final String host, final int port, Optional<String> certPath, ClientConfig clientConfig) {
+        return new OkHttpBasedRxHttpClient(host, port, certPath, clientConfig);
     }
+
 
     static String fullEndpointUrl(String baseApiUrl, String endpoint, QueryParameter... queryParameters) throws IllegalArgumentException {
         baseApiUrl = Optional.ofNullable(baseApiUrl)
