@@ -25,6 +25,7 @@
 package com.shekhargulati.reactivex.rxokhttp;
 
 import com.shekhargulati.reactivex.rxokhttp.functions.*;
+import com.squareup.okhttp.Response;
 import okio.Buffer;
 import rx.Observable;
 
@@ -202,8 +203,12 @@ public interface RxHttpClient {
 
     <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, BufferTransformer<R> transformer);
 
-    Observable<HttpStatus> delete(final String endpoint);
+    Observable<HttpStatus> delete(final String endpoint, QueryParameter... queryParameters);
 
-    Observable<HttpStatus> delete(final String endpoint, Map<String, String> headers);
+    Observable<HttpStatus> delete(final String endpoint, Map<String, String> headers, QueryParameter... queryParameters);
+
+    Observable<Response> head(final String endpoint, QueryParameter... queryParameters);
+
+    Observable<Response> head(final String endpoint, Map<String, String> headers, QueryParameter... queryParameters);
 
 }

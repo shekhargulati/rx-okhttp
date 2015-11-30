@@ -412,13 +412,13 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
-    public Observable<HttpStatus> delete(final String endpoint) {
-        return delete(endpoint, Collections.emptyMap());
+    public Observable<HttpStatus> delete(final String endpoint, QueryParameter... queryParameters) {
+        return delete(endpoint, Collections.emptyMap(), queryParameters);
     }
 
     @Override
-    public Observable<HttpStatus> delete(String endpoint, Map<String, String> headers) {
-        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
+    public Observable<HttpStatus> delete(String endpoint, Map<String, String> headers, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
             try {
                 Response response = makeHttpDeleteRequest(fullEndpointUrl, headers);
@@ -429,7 +429,39 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
                     subscriber.onError(new ServiceException(String.format("Service returned %d with message %s", response.code(), response.message()), response.code(), response.message()));
                 }
             } catch (IOException e) {
-                logger.error("Encountered error while making {} call", endpoint, e);
+                logger.error(String.format("Encountered error while making %s call", endpoint), e);
+                subscriber.onError(new ServiceException(e));
+            }
+        });
+    }
+
+    @Override
+    public Observable<Response> head(String endpoint, QueryParameter... queryParameters) {
+        return head(endpoint, Collections.emptyMap(), queryParameters);
+    }
+
+    @Override
+    public Observable<Response> head(String endpoint, Map<String, String> headers, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
+        return Observable.create(subscriber -> {
+            Request headRequest = new Request.Builder()
+                    .header("Content-Type", "application/json")
+                    .headers(Headers.of(headers))
+                    .url(fullEndpointUrl)
+                    .head()
+                    .build();
+            logger.info("Making HEAD request to {}", fullEndpointUrl);
+            Call call = client.newCall(headRequest);
+            try {
+                Response response = call.execute();
+                if (response.isSuccessful()) {
+                    subscriber.onNext(response);
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new ServiceException(String.format("Service returned %d with message %s", response.code(), response.message()), response.code(), response.message()));
+                }
+            } catch (IOException e) {
+                logger.error(String.format("Encountered error while making %s call", endpoint), e);
                 subscriber.onError(new ServiceException(e));
             }
         });

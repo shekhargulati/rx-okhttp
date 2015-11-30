@@ -26,6 +26,7 @@ package com.shekhargulati.reactivex.rxokhttp;
 
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Response;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
@@ -46,6 +47,9 @@ public class RxHttpClientTest {
 
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
+
+    @Rule
+    public MockServerRule mockServerRule = new MockServerRule();
 
     @Test
     public void shouldThrowExceptionWhenEndpointIsNull() throws Exception {
@@ -95,11 +99,11 @@ public class RxHttpClientTest {
 
     @Test
     public void shouldMakeAPostRequestWithQueryParameters() throws Exception {
-        MockWebServer mockWebServer = new MockWebServer();
+        MockWebServer mockWebServer = mockServerRule.mockWebServer();
 
         MockResponse response = new MockResponse();
         mockWebServer.enqueue(response.setStatus("HTTP/1.1 200 OK"));
-        mockWebServer.start();
+
         HttpUrl url = mockWebServer.url("/contact-me");
 
         RxHttpClient client = RxHttpClient.newRxClient(url.toString());
@@ -110,17 +114,15 @@ public class RxHttpClientTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         String path = recordedRequest.getPath();
         assertThat(path, equalTo("/contact-me/form?name=shekhar"));
-        mockWebServer.shutdown();
     }
 
     @Test
     public void shouldMakeAPostAndReceiveResponseRequestWithQueryParameters() throws Exception {
-        MockWebServer mockWebServer = new MockWebServer();
+        MockWebServer mockWebServer = mockServerRule.mockWebServer();
 
         MockResponse response = new MockResponse().setBody("hello");
 
         mockWebServer.enqueue(response);
-        mockWebServer.start();
 
         HttpUrl url = mockWebServer.url("/contact-me");
 
@@ -133,8 +135,6 @@ public class RxHttpClientTest {
         String path = recordedRequest.getPath();
         assertThat(path, equalTo("/contact-me/form?name=shekhar"));
         assertThat(recordedRequest.getMethod(), equalTo("POST"));
-
-        mockWebServer.shutdown();
     }
 
     @Test
@@ -155,6 +155,47 @@ public class RxHttpClientTest {
         assertThat((long) client.getConnectTimeout(), equalTo(Duration.ofSeconds(30).toMillis()));
         assertThat((long) client.getWriteTimeout(), equalTo(Duration.ofMinutes(2).toMillis()));
         assertThat((long) client.getReadTimeout(), equalTo(Duration.ofHours(1).toMillis()));
+    }
 
+    @Test
+    public void shouldMakeHeadRequestWithoutQueryParameter() throws Exception {
+        MockWebServer mockWebServer = mockServerRule.mockWebServer();
+
+        MockResponse response = new MockResponse().setHeader("key", "value");
+
+        mockWebServer.enqueue(response);
+
+        HttpUrl url = mockWebServer.url("/head");
+
+        RxHttpClient client = RxHttpClient.newRxClient(url.toString());
+
+        Observable<Response> responseObservable = client.head("/abc");
+        assertThat(responseObservable.toBlocking().first().header("key"), equalTo("value"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        String path = recordedRequest.getPath();
+        assertThat(path, equalTo("/head/abc"));
+        assertThat(recordedRequest.getMethod(), equalTo("HEAD"));
+    }
+
+    @Test
+    public void shouldMakeHeadRequestWithQueryParameter() throws Exception {
+        MockWebServer mockWebServer = mockServerRule.mockWebServer();
+
+        MockResponse response = new MockResponse().setHeader("key", "value");
+
+        mockWebServer.enqueue(response);
+
+        HttpUrl url = mockWebServer.url("/head");
+
+        RxHttpClient client = RxHttpClient.newRxClient(url.toString());
+
+        Observable<Response> responseObservable = client.head("/abc", QueryParameter.of("name", "test"));
+        assertThat(responseObservable.toBlocking().first().header("key"), equalTo("value"));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+        String path = recordedRequest.getPath();
+        assertThat(path, equalTo("/head/abc?name=test"));
+        assertThat(recordedRequest.getMethod(), equalTo("HEAD"));
     }
 }
