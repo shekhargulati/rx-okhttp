@@ -125,22 +125,29 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         Optional.ofNullable(endpoint).map(String::trim).filter(ep -> ep.length() > 0).orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty."));
         final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint, queryParameters);
         return Observable.create(subscriber -> {
-            if (!subscriber.isUnsubscribed()) {
-                try {
-                    Response response = makeHttpGetRequest(fullEndpointUrl, headers);
-                    if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
-                        try (ResponseBody body = response.body()) {
-                            Collection<R> collection = transformer.apply(body.string());
-                            collection.forEach(subscriber::onNext);
-                            subscriber.onCompleted();
-                        }
-                    } else if (response.isSuccessful()) {
+            try {
+                Response response = makeHttpGetRequest(fullEndpointUrl, headers);
+                if (response.isSuccessful()) {
+                    try (ResponseBody body = response.body()) {
+                        Collection<R> collection = transformer.apply(body.string());
+                        collection.forEach(e -> {
+                            if (subscriber.isUnsubscribed()) {
+                                return;
+                            }
+                            subscriber.onNext(e);
+                        });
                         subscriber.onCompleted();
-                    } else {
+                    }
+                } else if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
+                    subscriber.onCompleted();
+                } else {
+                    if (!subscriber.isUnsubscribed()) {
                         subscriber.onError(new ServiceException(String.format("Service returned %d with message %s", response.code(), response.message()), response.code(), response.message()));
                     }
-                } catch (IOException e) {
-                    logger.error("Encountered error while making HTTP GET call to '{}'", fullEndpointUrl, e);
+                }
+            } catch (IOException e) {
+                logger.error("Encountered error while making HTTP GET call to '{}'", fullEndpointUrl, e);
+                if (!subscriber.isUnsubscribed()) {
                     subscriber.onError(new ServiceException(e));
                 }
             }
@@ -365,25 +372,7 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     @Override
     public <R> Observable<R> postTarStream(final String endpoint, final Path pathToTarArchive, final BufferTransformer<R> transformer) {
 
-        final RequestBody requestBody = new RequestBody() {
-            @Override
-            public MediaType contentType() {
-                return TAR;
-            }
-
-            @Override
-            public void writeTo(BufferedSink sink) throws IOException {
-                try (FileInputStream fin = new FileInputStream(pathToTarArchive.toFile())) {
-                    final byte[] buffer = new byte[1024];
-                    int n;
-                    while (-1 != (n = fin.read(buffer))) {
-                        sink.write(buffer, 0, n);
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(String.format("Unable to read tar at %s", pathToTarArchive.toAbsolutePath()), e);
-                }
-            }
-        };
+        final RequestBody requestBody = createTarRequestBody(pathToTarArchive);
 
         final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
         return Observable.create(subscriber ->
@@ -409,6 +398,36 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
                     }
                 }
         );
+    }
+
+    @Override
+    public <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, ResponseTransformer<R> transformer) {
+        final RequestBody requestBody = createTarRequestBody(pathToTarArchive);
+
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
+        return Observable.create(subscriber ->
+                {
+                    try {
+                        Response response = makeHttpPostRequest(fullEndpointUrl, Collections.emptyMap(), requestBody);
+                        if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
+                            subscriber.onNext(transformer.apply(response));
+                            subscriber.onCompleted();
+                        } else if (response.isSuccessful()) {
+                            subscriber.onCompleted();
+                        } else {
+                            subscriber.onError(new ServiceException(String.format("Service returned %d with message %s", response.code(), response.message()), response.code(), response.message()));
+                        }
+                    } catch (IOException e) {
+                        logger.error("Encountered error while making {} call", endpoint, e);
+                        subscriber.onError(new ServiceException(e));
+                    }
+                }
+        );
+    }
+
+    @Override
+    public Observable<HttpStatus> postTarStream(String endpoint, Path pathToTarArchive) {
+        return postTarStream(endpoint, pathToTarArchive, ResponseTransformer.httpStatus());
     }
 
     @Override
@@ -512,6 +531,28 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
         logger.info("Making POST request to {}", fullEndpointUrl);
         Call call = client.newCall(getRequest);
         return call.execute();
+    }
+
+    private RequestBody createTarRequestBody(final Path pathToTarArchive) {
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return TAR;
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                try (FileInputStream fin = new FileInputStream(pathToTarArchive.toFile())) {
+                    final byte[] buffer = new byte[1024];
+                    int n;
+                    while (-1 != (n = fin.read(buffer))) {
+                        sink.write(buffer, 0, n);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(String.format("Unable to read tar at %s", pathToTarArchive.toAbsolutePath()), e);
+                }
+            }
+        };
     }
 
     OkHttpClient getClient() {

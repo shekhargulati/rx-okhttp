@@ -203,6 +203,10 @@ public interface RxHttpClient {
 
     <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, BufferTransformer<R> transformer);
 
+    <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, ResponseTransformer<R> transformer);
+
+    Observable<HttpStatus> postTarStream(String endpoint, Path pathToTarArchive);
+
     Observable<HttpStatus> delete(final String endpoint, QueryParameter... queryParameters);
 
     Observable<HttpStatus> delete(final String endpoint, Map<String, String> headers, QueryParameter... queryParameters);
