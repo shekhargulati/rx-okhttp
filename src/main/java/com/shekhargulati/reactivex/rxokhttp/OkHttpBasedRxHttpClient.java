@@ -370,6 +370,50 @@ class OkHttpBasedRxHttpClient implements RxHttpClient {
     }
 
     @Override
+    public Observable<String> postAndReceiveStream(final String endpoint, final String postBody, QueryParameter... queryParameters) {
+        return postAndReceiveStream(endpoint, Collections.emptyMap(), postBody, queryParameters);
+    }
+
+    @Override
+    public Observable<String> postAndReceiveStream(final String endpoint, final Map<String, String> headers, final String postBody, QueryParameter... queryParameters) {
+        final String fullEndpointUrl = fullEndpointUrl(baseApiUrl, endpoint);
+        return Observable.create(subscriber -> {
+            try {
+                RequestBody requestBody = RequestBody.create(JSON, postBody);
+                Request.Builder requestBuilder = new Request.Builder()
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/vnd.docker.raw-stream");
+                Request postRequest = requestBuilder
+                        .url(fullEndpointUrl)
+                        .headers(Headers.of(headers))
+                        .post(requestBody)
+                        .build();
+                logger.info("Making POST request to {}", fullEndpointUrl);
+                Call call = client.newCall(postRequest);
+                Response response = call.execute();
+                logger.debug("Received response with code '{}' and headers '{}'", response.code(), response.headers());
+                if (response.isSuccessful() && !subscriber.isUnsubscribed()) {
+                    try (ResponseBody body = response.body()) {
+                        BufferedSource source = body.source();
+                        while (!source.exhausted() && !subscriber.isUnsubscribed()) {
+                            final String responseLine = source.buffer().readUtf8();
+                            subscriber.onNext(responseLine);
+                        }
+                        subscriber.onCompleted();
+                    }
+                } else if (response.isSuccessful()) {
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new ServiceException(String.format("Service returned %d with message %s", response.code(), response.message()), response.code(), response.message()));
+                }
+            } catch (Exception e) {
+                logger.error("Encountered error while making {} call", endpoint, e);
+                subscriber.onError(new ServiceException(e));
+            }
+        });
+    }
+
+    @Override
     public <R> Observable<R> postTarStream(final String endpoint, final Path pathToTarArchive, final BufferTransformer<R> transformer) {
 
         final RequestBody requestBody = createTarRequestBody(pathToTarArchive);

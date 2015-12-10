@@ -201,6 +201,10 @@ public interface RxHttpClient {
 
     Observable<String> postAndReceiveResponse(String endpoint, Map<String, String> headers, String postBody, Predicate<String> errorChecker, QueryParameter... queryParameters);
 
+    Observable<String> postAndReceiveStream(String endpoint, String postBody, QueryParameter... queryParameters);
+
+    Observable<String> postAndReceiveStream(String endpoint, Map<String, String> headers, String postBody, QueryParameter... queryParameters);
+
     <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, BufferTransformer<R> transformer);
 
     <R> Observable<R> postTarStream(String endpoint, Path pathToTarArchive, ResponseTransformer<R> transformer);
