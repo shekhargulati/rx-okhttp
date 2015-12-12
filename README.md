@@ -15,8 +15,7 @@ For Apache Maven users, please add following to your pom.xml.
     <dependency>
         <groupId>com.shekhargulati.reactivex</groupId>
         <artifactId>rx-okhttp</artifactId>
-        <version>0.1.5</version>
-        <type>jar</type>
+        <version>0.1.8</version>
     </dependency>
 </dependencies>
 ```
@@ -24,7 +23,5 @@ For Apache Maven users, please add following to your pom.xml.
 Gradle users can add following to their build.gradle file.
 
 ```
-compile(group: 'com.shekhargulati.reactivex', name: 'rx-okhttp', version: '0.1.5', ext: 'jar'){
-        transitive=true
-}
+compile 'com.shekhargulati.reactivex:rx-okhttp:0.1.8'
 ```
