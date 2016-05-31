@@ -24,7 +24,8 @@
 
 package com.shekhargulati.reactivex.rxokhttp.functions;
 
-import com.squareup.okhttp.ResponseBody;
+
+import okhttp3.ResponseBody;
 
 public interface ResponseBodyTransformer<R> extends IoFunction<ResponseBody, R> {
 

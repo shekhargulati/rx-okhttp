@@ -1,96 +1,147 @@
-/*
- * The MIT License
- *
- * Copyright 2015 Shekhar Gulati <shekhargulati84@gmail.com>.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package com.shekhargulati.reactivex.rxokhttp;
 
+
 import com.shekhargulati.reactivex.rxokhttp.functions.*;
-import okhttp3.MediaType;
+import okhttp3.Dns;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okio.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import okio.ByteString;
+import org.newsclub.net.unix.AFUNIXSocket;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
 import rx.Observable;
 
+import javax.net.SocketFactory;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-class OkHttpBasedRxHttpClient implements RxHttpClient {
-
-    private final Logger logger = LoggerFactory.getLogger(OkHttpBasedRxHttpClient.class);
-
-    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final MediaType OCTET = MediaType.parse("application/octet-stream; charset=utf-8");
-    public static final MediaType TAR = MediaType.parse("application/tar; charset=utf-8");
+class OkHttpUnixSocketRxHttpClient implements RxHttpClient {
 
     private final DefaultOkHttpBasedRxHttpClient client;
 
-    OkHttpBasedRxHttpClient(final String baseApiUrl, final ClientConfig clientConfig) {
-        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-        setClientConfig(clientConfig, clientBuilder);
-        client = new DefaultOkHttpBasedRxHttpClient(baseApiUrl, clientBuilder.build(), RxHttpClient::fullEndpointUrl);
+    public OkHttpUnixSocketRxHttpClient(final String unixSocketPath) {
+        UnixSocketFactory socketFactory = new UnixSocketFactory();
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .socketFactory(socketFactory)
+                .dns(socketFactory)
+                .build();
+        client = new DefaultOkHttpBasedRxHttpClient(unixSocketPath, okHttpClient, (baseApiUrl, endpoint, params) -> socketFactory.urlForUnixSocketPath(baseApiUrl, endpoint));
     }
 
-    OkHttpBasedRxHttpClient(final String host, final int port, ClientConfig clientConfig) {
-        this(host, port, Optional.empty(), clientConfig);
+    private static class UnixSocketFactory extends SocketFactory implements Dns {
+
+        public UnixSocketFactory() {
+            if (!AFUNIXSocket.isSupported()) {
+                throw new UnsupportedOperationException("AFUNIXSocket.isSupported() == false");
+            }
+        }
+
+        public HttpUrl urlForUnixSocketPath(String unixSocketPath, String path) {
+            return new HttpUrl.Builder()
+                    .scheme("http")
+                    .host(UnixSocket.encodeHostname(unixSocketPath))
+                    .addPathSegment(path)
+                    .build();
+        }
+
+        @Override
+        public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+            return hostname.endsWith(".socket")
+                    ? Collections.singletonList(InetAddress.getByAddress(hostname, new byte[]{0, 0, 0, 0}))
+                    : Dns.SYSTEM.lookup(hostname);
+        }
+
+        @Override
+        public Socket createSocket() throws IOException {
+            return new UnixSocket();
+        }
+
+        @Override
+        public Socket createSocket(String s, int i) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Socket createSocket(String s, int i, InetAddress inetAddress, int i1) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Socket createSocket(InetAddress inetAddress, int i) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) throws IOException {
+            throw new UnsupportedOperationException();
+        }
     }
 
-    OkHttpBasedRxHttpClient(final String host, final int port, final Optional<String> certPath, ClientConfig clientConfig) {
-        final String scheme = certPath.isPresent() ? "https" : "http";
-        String baseApiUrl = scheme + "://" + host + ":" + port;
-        logger.info("Base API uri {}", baseApiUrl);
-        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-        if (certPath.isPresent()) {
-            clientBuilder.sslSocketFactory(new SslCertificates(Paths.get(certPath.get())).sslContext().getSocketFactory());
-        }
-        setClientConfig(clientConfig, clientBuilder);
-        client = new DefaultOkHttpBasedRxHttpClient(baseApiUrl, clientBuilder.build(), RxHttpClient::fullEndpointUrl);
-    }
+    private static class UnixSocket extends Socket {
 
-    private void setClientConfig(ClientConfig clientConfig, OkHttpClient.Builder clientBuilder) {
-        clientBuilder.followRedirects(clientConfig.isFollowRedirects());
-        clientBuilder.followSslRedirects(clientConfig.isFollowSslRedirects());
-        clientBuilder.retryOnConnectionFailure(clientConfig.isRetryOnConnectionFailure());
-        Duration readTimeout = clientConfig.getReadTimeout();
-        if (readTimeout != null) {
-            clientBuilder.readTimeout(readTimeout.getSeconds(), TimeUnit.SECONDS);
+        private AFUNIXSocket socket;
+
+        @Override
+        public void connect(SocketAddress endpoint, int timeout) throws IOException {
+            InetAddress address = ((InetSocketAddress) endpoint).getAddress();
+            String socketPath = decodeHostname(address);
+
+            System.out.println("connect via '" + socketPath + "'...");
+            File socketFile = new File(socketPath);
+
+            socket = AFUNIXSocket.newInstance();
+            socket.connect(new AFUNIXSocketAddress(socketFile), timeout);
+            socket.setSoTimeout(timeout);
         }
-        Duration writeTimeout = clientConfig.getWriteTimeout();
-        if (writeTimeout != null) {
-            clientBuilder.writeTimeout(writeTimeout.getSeconds(), TimeUnit.SECONDS);
+
+        @Override
+        public void bind(SocketAddress bindpoint) throws IOException {
+            socket.bind(bindpoint);
         }
-        Duration connectTimeout = clientConfig.getConnectTimeout();
-        if (connectTimeout != null) {
-            clientBuilder.connectTimeout(connectTimeout.getSeconds(), TimeUnit.SECONDS);
+
+        @Override
+        public boolean isConnected() {
+            return socket.isConnected();
+        }
+
+        @Override
+        public OutputStream getOutputStream() throws IOException {
+            return socket.getOutputStream();
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return socket.getInputStream();
+        }
+
+        private static String encodeHostname(String path) {
+            return Encoder.encode(path) + ".socket";
+        }
+
+        private static String decodeHostname(InetAddress address) {
+            String hostName = address.getHostName();
+            return Encoder.decode(hostName.substring(0, hostName.indexOf(".socket")));
+        }
+
+        private static class Encoder {
+            static String encode(String text) {
+                return ByteString.encodeUtf8(text).hex();
+            }
+
+            static String decode(String hex) {
+                return ByteString.decodeHex(hex).utf8();
+            }
         }
     }
-
 
     @Override
     public Observable<String> get(String endpoint, QueryParameter... queryParameters) {

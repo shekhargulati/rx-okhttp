@@ -25,8 +25,8 @@
 package com.shekhargulati.reactivex.rxokhttp.functions;
 
 import com.shekhargulati.reactivex.rxokhttp.HttpStatus;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.ResponseBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import java.io.IOException;
 

@@ -25,7 +25,8 @@
 package com.shekhargulati.reactivex.rxokhttp;
 
 import com.shekhargulati.reactivex.rxokhttp.functions.*;
-import com.squareup.okhttp.Response;
+import okhttp3.HttpUrl;
+import okhttp3.Response;
 import okio.Buffer;
 import rx.Observable;
 
@@ -70,8 +71,12 @@ public interface RxHttpClient {
         return new OkHttpBasedRxHttpClient(host, port, certPath, clientConfig);
     }
 
+    static RxHttpClient newUnixSocketRxClient(final String unixSocketPath) {
+        return new OkHttpUnixSocketRxHttpClient(unixSocketPath);
+    }
 
-    static String fullEndpointUrl(String baseApiUrl, String endpoint, QueryParameter... queryParameters) throws IllegalArgumentException {
+
+    static HttpUrl fullEndpointUrl(String baseApiUrl, String endpoint, QueryParameter... queryParameters) throws IllegalArgumentException {
         baseApiUrl = Optional.ofNullable(baseApiUrl)
                 .filter(e -> e.trim().length() > 0)
                 .map(e -> e.endsWith("/") ? e.substring(0, e.lastIndexOf("/")) : e)
@@ -82,7 +87,7 @@ public interface RxHttpClient {
                 .orElseThrow(() -> new IllegalArgumentException("endpoint can't be null or empty"));
         String queryString = Optional.ofNullable(queryParameters).map(qps -> Stream.of(qps).map(qp -> String.format("%s=%s", qp.param(), qp.value())).collect(Collectors.joining("&", "?", ""))).orElse("");
         queryString = queryString.endsWith("?") ? "" : queryString;
-        return baseApiUrl + endpoint + queryString;
+        return HttpUrl.parse(baseApiUrl + endpoint + queryString);
     }
 
     /**
